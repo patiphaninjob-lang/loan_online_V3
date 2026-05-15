@@ -35,6 +35,21 @@
         * { box-sizing: border-box; }
         input, select, textarea, button { font: inherit; }
         .min-safe-0 { min-width: 0; }
+        .quick-actions { position: fixed; right: 24px; bottom: 24px; z-index: 40; display: flex; flex-direction: column; align-items: flex-end; gap: 14px; }
+        .quick-action-list { display: none; flex-direction: column; align-items: flex-end; gap: 12px; }
+        .quick-actions.open .quick-action-list { display: flex; animation: quickActionIn .16s ease; }
+        @keyframes quickActionIn { from{opacity:0; transform:translateY(10px) scale(.98)} to{opacity:1; transform:translateY(0) scale(1)} }
+        .quick-action-row { display: flex; align-items: center; justify-content: flex-end; gap: 12px; }
+        .quick-action-label { background: rgba(248,250,252,.96); color: #1f2937; border: 1px solid rgba(226,232,240,.95); box-shadow: 0 10px 28px rgba(15,23,42,.16); border-radius: 14px; padding: 9px 14px; font-weight: 600; white-space: nowrap; }
+        .quick-action-btn { width: 62px; height: 62px; border-radius: 20px; color: white; display: flex; align-items: center; justify-content: center; box-shadow: 0 14px 32px rgba(15,23,42,.24); transition: transform .14s ease, box-shadow .14s ease, background .14s ease; }
+        .quick-action-btn:hover { transform: translateY(-2px); box-shadow: 0 18px 38px rgba(15,23,42,.28); }
+        .quick-action-btn i { font-size: 24px; }
+        .quick-action-main { width: 70px; height: 70px; border-radius: 22px; background: #2563eb; color: white; display: flex; align-items: center; justify-content: center; box-shadow: 0 16px 36px rgba(37,99,235,.36); transition: transform .16s ease, background .16s ease; }
+        .quick-action-main:hover { transform: translateY(-2px); background: #1d4ed8; }
+        .quick-action-main i { font-size: 28px; transition: transform .16s ease; }
+        .quick-actions.open .quick-action-main i { transform: rotate(45deg); }
+        .quick-borrower-item { width: 100%; text-align: left; border: 1px solid #e5e7eb; border-radius: 14px; padding: 14px; background: white; transition: border-color .14s ease, box-shadow .14s ease, transform .14s ease; }
+        .quick-borrower-item:hover { border-color: #93c5fd; box-shadow: 0 10px 24px rgba(15,23,42,.08); transform: translateY(-1px); }
 
         @media (max-width: 768px) {
             body { min-height: 100dvh; overflow-x: hidden; }
@@ -87,6 +102,25 @@
             #sidebar-summary { display: none; }
             body > .flex.h-screen.overflow-hidden > .w-72 > .border-t {
                 display: none;
+            }
+            .quick-actions {
+                right: 16px;
+                bottom: 92px;
+            }
+            .quick-action-btn {
+                width: 58px;
+                height: 58px;
+                border-radius: 18px;
+            }
+            .quick-action-main {
+                width: 64px;
+                height: 64px;
+                border-radius: 20px;
+            }
+            .quick-action-label {
+                max-width: calc(100vw - 112px);
+                overflow: hidden;
+                text-overflow: ellipsis;
             }
             body > .flex.h-screen.overflow-hidden > .flex-1 {
                 width: 100%;
@@ -401,7 +435,51 @@
     </div>
 </div>
 
+<!-- Floating Quick Actions -->
+<div id="quick-actions" class="quick-actions">
+    <div class="quick-action-list">
+        <div class="quick-action-row">
+            <span class="quick-action-label">ค้างดอกเบี้ย</span>
+            <button type="button" onclick="openQuickBorrowerPicker('default')" class="quick-action-btn bg-red-500 hover:bg-red-600" aria-label="ค้างดอกเบี้ย">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </button>
+        </div>
+        <div class="quick-action-row">
+            <span class="quick-action-label">ชำระดอก</span>
+            <button type="button" onclick="openQuickBorrowerPicker('payment')" class="quick-action-btn bg-green-500 hover:bg-green-600" aria-label="ชำระดอก">
+                <i class="fa-solid fa-hand-holding-dollar"></i>
+            </button>
+        </div>
+        <div class="quick-action-row">
+            <span class="quick-action-label">เพิ่มผู้กู้</span>
+            <button type="button" onclick="openQuickAddBorrower()" class="quick-action-btn bg-blue-500 hover:bg-blue-600" aria-label="เพิ่มผู้กู้">
+                <i class="fa-solid fa-user-plus"></i>
+            </button>
+        </div>
+    </div>
+    <button type="button" onclick="toggleQuickActions()" class="quick-action-main" aria-label="เมนูด่วน" aria-expanded="false">
+        <i class="fa-solid fa-plus"></i>
+    </button>
+</div>
+
 <!-- ============================================================ MODALS ============================================================ -->
+
+<!-- Quick Borrower Picker Modal -->
+<div id="quick-picker-modal" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-[90] p-4 backdrop-blur-sm">
+    <div class="bg-white rounded-2xl w-full max-w-xl modal-box max-h-[90vh] flex flex-col">
+        <div class="flex justify-between items-center p-6 border-b shrink-0">
+            <div>
+                <h3 id="quick-picker-title" class="text-lg font-semibold"></h3>
+                <p id="quick-picker-subtitle" class="text-xs text-gray-500 mt-1"></p>
+            </div>
+            <button onclick="closeModal('quick-picker-modal')" class="text-gray-400 hover:text-gray-600 w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="p-6 border-b bg-gray-50 shrink-0">
+            <input type="text" id="quick-picker-search" placeholder="ค้นหาชื่อผู้กู้..." oninput="renderQuickBorrowerPicker()" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white">
+        </div>
+        <div id="quick-picker-content" class="p-6 overflow-y-auto flex-1 space-y-3"></div>
+    </div>
+</div>
 
 <!-- Payment Modal -->
 <div id="payment-modal" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
@@ -634,6 +712,7 @@ let currentDefaultId = null;
 let currentPaymentId = null;
 let currentHistoryEdit = null;
 let currentAddLoanId = null;
+let currentQuickPickerMode = null;
 
 async function loadLoans() {
     try {
@@ -740,7 +819,96 @@ function normalizeDateTextInput(el) {
 }
 function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
 function closeAllDropdowns() { document.querySelectorAll('.dropdown-menu').forEach(m=>m.classList.remove('open')); }
-document.addEventListener('click', e => { if (!e.target.closest('.dropdown-wrapper')) closeAllDropdowns(); });
+function toggleQuickActions() {
+    const wrap = document.getElementById('quick-actions');
+    const mainBtn = wrap?.querySelector('.quick-action-main');
+    if (!wrap) return;
+    const isOpen = wrap.classList.toggle('open');
+    mainBtn?.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+}
+function closeQuickActions() {
+    const wrap = document.getElementById('quick-actions');
+    const mainBtn = wrap?.querySelector('.quick-action-main');
+    wrap?.classList.remove('open');
+    mainBtn?.setAttribute('aria-expanded', 'false');
+}
+function openQuickAddBorrower() {
+    closeQuickActions();
+    showSection('add');
+    document.querySelector('.flex-1.overflow-auto')?.scrollTo({ top: 0, behavior: 'smooth' });
+    setTimeout(() => document.getElementById('borrower')?.focus(), 120);
+}
+function openQuickBorrowerPicker(mode) {
+    closeQuickActions();
+    currentQuickPickerMode = mode;
+    const isPayment = mode === 'payment';
+    document.getElementById('quick-picker-title').textContent = isPayment ? 'เลือกผู้กู้ที่ชำระดอก' : 'เลือกผู้กู้ที่ค้างดอกเบี้ย';
+    document.getElementById('quick-picker-subtitle').textContent = isPayment
+        ? 'เลือกชื่อก่อน แล้วระบบจะเปิดหน้าชำระเดิมให้เลือกงวดหรือยอดที่ต้องการชำระ'
+        : 'เลือกชื่อก่อน แล้วระบบจะเปิดหน้าบันทึกค้างดอกเดิมให้กรอกวันที่ งวด และยอดค้าง';
+    document.getElementById('quick-picker-search').value = '';
+    renderQuickBorrowerPicker();
+    document.getElementById('quick-picker-modal').classList.remove('hidden');
+    setTimeout(() => document.getElementById('quick-picker-search')?.focus(), 120);
+}
+function renderQuickBorrowerPicker() {
+    const content = document.getElementById('quick-picker-content');
+    if (!content) return;
+    const q = (document.getElementById('quick-picker-search')?.value || '').trim().toLowerCase();
+    const isPayment = currentQuickPickerMode === 'payment';
+    const list = loans
+        .filter(loan => !q || (loan.borrower || '').toLowerCase().includes(q))
+        .sort((a, b) => {
+            const sa = getLoanStats(a), sb = getLoanStats(b);
+            return sb.overdueCount - sa.overdueCount || b.remainingPrincipal - a.remainingPrincipal || (a.borrower || '').localeCompare(b.borrower || '', 'th');
+        });
+
+    if (!loans.length) {
+        content.innerHTML = '<p class="text-center text-gray-400 py-8">ยังไม่มีข้อมูลผู้กู้</p>';
+        return;
+    }
+    if (!list.length) {
+        content.innerHTML = '<p class="text-center text-gray-400 py-8">ไม่พบชื่อผู้กู้ที่ค้นหา</p>';
+        return;
+    }
+
+    content.innerHTML = list.map(loan => {
+        const s = getLoanStats(loan);
+        const status = s.overdueCount > 0
+            ? `<span class="text-red-600 font-semibold">ค้าง ${s.overdueCount} งวด · ${formatMoney(s.overdueAmount)} ฿</span>`
+            : `<span class="text-green-600 font-semibold">ดอก ${formatMoney(s.monthlyInterest)} ฿/เดือน</span>`;
+        const action = isPayment ? 'openQuickPaymentForLoan' : 'openQuickDefaultForLoan';
+        const icon = isPayment ? 'fa-hand-holding-dollar text-green-600' : 'fa-triangle-exclamation text-red-600';
+        return `
+        <button type="button" onclick="${action}(${loan.id})" class="quick-borrower-item">
+            <div class="flex items-center gap-3">
+                <div class="w-11 h-11 rounded-xl ${isPayment ? 'bg-green-50' : 'bg-red-50'} flex items-center justify-center shrink-0">
+                    <i class="fa-solid ${icon}"></i>
+                </div>
+                <div class="min-safe-0 flex-1">
+                    <p class="font-semibold text-gray-800 truncate">${escapeHtml(loan.emoji || '')} ${escapeHtml(loan.borrower)}</p>
+                    <p class="text-xs text-gray-500 mt-0.5">${status}</p>
+                </div>
+                <div class="text-right shrink-0">
+                    <p class="text-xs text-gray-400">ต้นคงเหลือ</p>
+                    <p class="font-bold text-gray-700">${formatMoney(loan.remainingPrincipal)} ฿</p>
+                </div>
+            </div>
+        </button>`;
+    }).join('');
+}
+function openQuickPaymentForLoan(id) {
+    closeModal('quick-picker-modal');
+    openPaymentModal(id);
+}
+function openQuickDefaultForLoan(id) {
+    closeModal('quick-picker-modal');
+    openDefaultModal(id);
+}
+document.addEventListener('click', e => {
+    if (!e.target.closest('.dropdown-wrapper')) closeAllDropdowns();
+    if (!e.target.closest('#quick-actions')) closeQuickActions();
+});
 document.addEventListener('input', e => {
     normalizeDateTextInput(e.target);
     if (e.target?.id === 'pay-date') updatePayNoteFromDate();
